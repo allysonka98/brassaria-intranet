@@ -2,11 +2,14 @@
  * Cliente da API REST da Brassaria.
  * Todas as informações exibidas no site vêm daqui.
  *
- * Se o site for servido pelo próprio Spring Boot (http://localhost:8080), a API
- * é chamada na mesma origem. Se for aberto por outro servidor (ex.: Live Server,
- * porta 5500) ou direto do disco, as chamadas vão para http://localhost:8080.
+ * O site normalmente é servido pelo próprio Spring Boot (local ou hospedado),
+ * então a API é chamada na mesma origem ("/api"). Só quando a página é aberta
+ * direto do disco ou pelo Live Server (porta 5500) as chamadas vão para
+ * http://localhost:8080.
  */
-const API_BASE = (location.port === "8080") ? "/api" : "http://localhost:8080/api";
+const API_BASE = (location.protocol === "file:" || location.port === "5500")
+    ? "http://localhost:8080/api"
+    : "/api";
 
 class ErroApi extends Error {
     constructor(status, corpo) {
