@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22%231e4d3b%22/%3E%3Ctext x=%2250%22 y=%2266%22 font-size=%2248%22 text-anchor=%22middle%22 fill=%22%23f1c453%22 font-family=%22Georgia%22%3EB%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="css/estilo.css">
+    <title>Brassaria Internacional · Intranet 780 anos</title>
+</head>
+<body>
+
+<section class="hero">
+    <div class="container">
+        <div>
+            <span class="hero-selo" id="hero-selo">Desde 1246</span>
+            <h1 id="hero-titulo">Brassaria Internacional</h1>
+            <p id="hero-slogan">Carregando…</p>
+            <div class="hero-acoes">
+                <a class="botao botao-primario" href="portfolio.html">Conheça o portfólio</a>
+                <a class="botao botao-contorno" href="eventos.html">Cadastrar evento</a>
+            </div>
+        </div>
+        <div class="numero-780">
+            <div class="valor" id="anos">780</div>
+            <div class="rotulo">anos de história</div>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="container">
+        <div class="cabecalho-secao">
+            <div>
+                <div class="sobretitulo">Agenda e notícias</div>
+                <h2>Últimos eventos cadastrados</h2>
+            </div>
+            <a class="botao botao-contorno" href="eventos.html">Ver todos os eventos</a>
+        </div>
+        <div class="grade grade-3" id="eventos-recentes">
+            <p class="carregando">Carregando eventos…</p>
+        </div>
+    </div>
+</section>
+
+<section class="faixa-consciente" aria-label="Consumo consciente">
+    <div class="container">
+        <div><h3>Intercale com água</h3><p>Um copo de água a cada dose ajuda o corpo e o dia seguinte.</p></div>
+        <div><h3>Informação no rótulo</h3><p>Calorias e teor alcoólico de cada bebida sempre à vista.</p></div>
+        <div><h3>Opções zero</h3><p>Uma linha inteira sem álcool para brindar sem abrir mão de nada.</p></div>
+        <div><h3>Volta segura</h3><p>Se beber, não dirija. Combine a carona antes da festa.</p></div>
+    </div>
+</section>
+
+<section class="secao secao-creme">
+    <div class="container">
+        <div class="cabecalho-secao">
+            <div>
+                <div class="sobretitulo">Portfólio</div>
+                <h2>Do clássico ao zero álcool</h2>
+            </div>
+            <a class="botao botao-contorno" href="portfolio.html">Ver portfólio completo</a>
+        </div>
+        <div class="grade grade-4" id="destaques">
+            <p class="carregando">Carregando bebidas…</p>
+        </div>
+    </div>
+</section>
+
+<script src="js/api.js"></script>
+<script src="js/componentes.js"></script>
+<script>
+    async function carregarEmpresa() {
+        try {
+            const e = await Api.empresa();
+            document.getElementById("hero-selo").textContent = "Desde " + e.anoFundacao;
+            document.getElementById("hero-titulo").innerHTML =
+                escapar(e.nome).replace("Internacional", "<em>Internacional</em>");
+            document.getElementById("hero-slogan").textContent = e.slogan;
+            document.getElementById("anos").textContent = e.anosDeHistoria;
+        } catch (erro) {
+            document.getElementById("hero-slogan").innerHTML = avisoErro(erro.message);
+        }
+    }
+
+    async function carregarEventos() {
+        const alvo = document.getElementById("eventos-recentes");
+        try {
+            const eventos = await Api.eventosRecentes();
+            alvo.innerHTML = eventos.length
+                ? eventos.map((e, i) => cardEvento(e, { destacarNovo: i === 0 })).join("")
+                : '<p class="vazio">Nenhum evento cadastrado ainda.</p>';
+        } catch (erro) {
+            alvo.innerHTML = avisoErro(erro.message);
+        }
+    }
+
+    async function carregarDestaques() {
+        const alvo = document.getElementById("destaques");
+        try {
+            const bebidas = await Api.bebidas();
+            // Um destaque de cada categoria
+            const porCategoria = new Map();
+            bebidas.forEach(b => { if (!porCategoria.has(b.categoriaId)) porCategoria.set(b.categoriaId, b); });
+            alvo.innerHTML = [...porCategoria.values()].map(cardBebida).join("");
+        } catch (erro) {
+            alvo.innerHTML = avisoErro(erro.message);
+        }
+    }
+
+    prepararModalEvento(document.getElementById("eventos-recentes"));
+    carregarEmpresa();
+    carregarEventos();
+    carregarDestaques();
+</script>
+</body>
+</html>

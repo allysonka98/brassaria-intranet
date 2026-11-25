@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22%231e4d3b%22/%3E%3Ctext x=%2250%22 y=%2266%22 font-size=%2248%22 text-anchor=%22middle%22 fill=%22%23f1c453%22 font-family=%22Georgia%22%3EB%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="css/estilo.css">
+    <title>Eventos · Brassaria Internacional</title>
+</head>
+<body>
+
+<section class="pagina-topo">
+    <div class="container">
+        <div class="sobretitulo">Notícias e eventos</div>
+        <h1>Eventos para os nossos clientes</h1>
+        <p>Cadastre aqui as notícias dos eventos da Brassaria. Os três últimos cadastrados aparecem automaticamente na página inicial.</p>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="container layout-eventos">
+        <div>
+            <div class="cabecalho-secao">
+                <h2>Todos os eventos</h2>
+                <span class="local" id="total-eventos"></span>
+            </div>
+            <div class="grade" id="lista-eventos">
+                <p class="carregando">Carregando eventos…</p>
+            </div>
+        </div>
+
+        <aside>
+            <form class="card formulario" id="form-evento" novalidate>
+                <h2 style="margin:0">Cadastrar evento</h2>
+                <div id="retorno-form" aria-live="polite"></div>
+
+                <div>
+                    <label for="titulo">Título</label>
+                    <input id="titulo" name="titulo" maxlength="150" required>
+                    <div class="erro-campo" data-erro="titulo"></div>
+                </div>
+                <div>
+                    <label for="resumo">Resumo (aparece no card)</label>
+                    <input id="resumo" name="resumo" maxlength="300" required>
+                    <div class="erro-campo" data-erro="resumo"></div>
+                </div>
+                <div class="linha">
+                    <div>
+                        <label for="dataEvento">Data do evento</label>
+                        <input id="dataEvento" name="dataEvento" type="date" required>
+                        <div class="erro-campo" data-erro="dataEvento"></div>
+                    </div>
+                    <div>
+                        <label for="local">Local</label>
+                        <input id="local" name="local" maxlength="150" required>
+                        <div class="erro-campo" data-erro="local"></div>
+                    </div>
+                </div>
+                <div>
+                    <label for="conteudo">Notícia completa</label>
+                    <textarea id="conteudo" name="conteudo" maxlength="5000" required></textarea>
+                    <div class="erro-campo" data-erro="conteudo"></div>
+                </div>
+                <div>
+                    <label>Bebidas servidas</label>
+                    <div class="lista-checks" id="checks-bebidas"><span class="local">Carregando portfólio…</span></div>
+                </div>
+                <button class="botao botao-primario" type="submit" id="botao-salvar">Publicar evento</button>
+            </form>
+        </aside>
+    </div>
+</section>
+
+<script src="js/api.js"></script>
+<script src="js/componentes.js"></script>
+<script>
+    const lista = document.getElementById("lista-eventos");
+    const form = document.getElementById("form-evento");
+    const retorno = document.getElementById("retorno-form");
+    const botaoSalvar = document.getElementById("botao-salvar");
+
+    async function carregarEventos() {
+        try {
+            const eventos = await Api.eventos();   // GET /api/eventos
+            document.getElementById("total-eventos").textContent =
+                `${eventos.length} evento${eventos.length === 1 ? "" : "s"}`;
+            lista.innerHTML = eventos.length
+                ? eventos.map(e => cardEvento(e).replace(
+                    '<div class="etiquetas">',
+                    `<button type="button" class="botao botao-perigo" data-excluir="${e.id}" style="align-self:flex-start">Excluir</button><div class="etiquetas">`)).join("")
+                : '<p class="vazio">Nenhum evento cadastrado ainda. Use o formulário ao lado.</p>';
+        } catch (erro) {
+            lista.innerHTML = avisoErro(erro.message);
+        }
+    }
+
+    async function carregarBebidas() {
+        const alvo = document.getElementById("checks-bebidas");
+        try {
+            const bebidas = await Api.bebidas();   // GET /api/bebidas
+            alvo.innerHTML = bebidas.map(b => `
+                <label><input type="checkbox" name="bebidaIds" value="${b.id}">
+                <span class="etiqueta"><i style="background:${b.corHex}"></i>${escapar(b.nome)}</span></label>`).join("");
+        } catch (erro) {
+            alvo.innerHTML = avisoErro(erro.message);
+        }
+    }
+
+    function limparErros() {
+        retorno.innerHTML = "";
+        form.querySelectorAll("[data-erro]").forEach(el => el.textContent = "");
+    }
+
+    form.addEventListener("submit", async ev => {
+        ev.preventDefault();
+        limparErros();
+        const dados = {
+            titulo: form.titulo.value,
+            resumo: form.resumo.value,
+            conteudo: form.conteudo.value,
+            local: form.local.value,
+            dataEvento: form.dataEvento.value || null,
+            bebidaIds: [...form.querySelectorAll("input[name=bebidaIds]:checked")].map(c => Number(c.value)),
+        };
+        botaoSalvar.disabled = true;
+        botaoSalvar.textContent = "Publicando…";
+        try {
+            const criado = await Api.criarEvento(dados);   // POST /api/eventos
+            retorno.innerHTML = `<div class="aviso aviso-ok">Evento "${escapar(criado.titulo)}" publicado! Ele já aparece na página inicial.</div>`;
+            form.reset();
+            carregarEventos();
+        } catch (erro) {
+            // Erros de validação do back-end (Bean Validation) são exibidos em cada campo
+            Object.entries(erro.campos).forEach(([campo, msg]) => {
+                const el = form.querySelector(`[data-erro="${campo}"]`);
+                if (el) el.textContent = msg;
+            });
+            retorno.innerHTML = avisoErro(erro.message);
+        } finally {
+            botaoSalvar.disabled = false;
+            botaoSalvar.textContent = "Publicar evento";
+        }
+    });
+
+    // Exclusão com confirmação em dois cliques (sem caixas de diálogo do navegador)
+    lista.addEventListener("click", async ev => {
+        const botao = ev.target.closest("[data-excluir]");
+        if (!botao) return;
+        if (!botao.dataset.confirmar) {
+            botao.dataset.confirmar = "1";
+            botao.textContent = "Clique de novo para confirmar";
+            setTimeout(() => { delete botao.dataset.confirmar; botao.textContent = "Excluir"; }, 4000);
+            return;
+        }
+        botao.disabled = true;
+        try {
+            await Api.excluirEvento(botao.dataset.excluir);   // DELETE /api/eventos/{id}
+            carregarEventos();
+        } catch (erro) {
+            botao.insertAdjacentHTML("afterend", avisoErro(erro.message));
+        }
+    });
+
+    prepararModalEvento(lista);
+    carregarEventos();
+    carregarBebidas();
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22%231e4d3b%22/%3E%3Ctext x=%2250%22 y=%2266%22 font-size=%2248%22 text-anchor=%22middle%22 fill=%22%23f1c453%22 font-family=%22Georgia%22%3EB%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="css/estilo.css">
+    <title>Missão, visão e valores · Brassaria Internacional</title>
+</head>
+<body>
+
+<section class="pagina-topo">
+    <div class="container">
+        <div class="sobretitulo" id="fundacao">Desde 1246</div>
+        <h1>Quem somos</h1>
+        <p id="historia" class="historia">Carregando…</p>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="container">
+        <div class="mv">
+            <article class="card">
+                <div class="sobretitulo">Nossa razão de existir</div>
+                <h2>Missão</h2>
+                <p id="missao">Carregando…</p>
+            </article>
+            <article class="card">
+                <div class="sobretitulo">Aonde queremos chegar</div>
+                <h2>Visão</h2>
+                <p id="visao">Carregando…</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="secao secao-creme">
+    <div class="container">
+        <div class="cabecalho-secao">
+            <div>
+                <div class="sobretitulo">O que nos guia</div>
+                <h2>Nossos valores</h2>
+            </div>
+        </div>
+        <div class="grade grade-3" id="valores">
+            <p class="carregando">Carregando valores…</p>
+        </div>
+    </div>
+</section>
+
+<section class="faixa-consciente" aria-label="Consumo consciente">
+    <div class="container">
+        <div><h3>Saúde em primeiro lugar</h3><p>Prazer e bem-estar andam juntos quando há equilíbrio.</p></div>
+        <div><h3>Moderação sempre</h3><p>Respeite seus limites e os de quem está com você.</p></div>
+        <div><h3>Escolha informada</h3><p>Consulte calorias e teor alcoólico no portfólio.</p></div>
+    </div>
+</section>
+
+<script src="js/api.js"></script>
+<script src="js/componentes.js"></script>
+<script>
+    (async function () {
+        try {
+            const e = await Api.empresa();   // GET /api/empresa
+            document.getElementById("fundacao").textContent = `Desde ${e.anoFundacao} · ${e.anosDeHistoria} anos`;
+            document.getElementById("historia").textContent = e.historia;
+            document.getElementById("missao").textContent = e.missao;
+            document.getElementById("visao").textContent = e.visao;
+            document.getElementById("valores").innerHTML = e.valores.map((v, i) => `
+                <article class="valor-item">
+                    <div class="num">${String(i + 1).padStart(2, "0")}</div>
+                    <h3>${escapar(v.titulo)}</h3>
+                    <p>${escapar(v.descricao)}</p>
+                </article>`).join("");
+        } catch (erro) {
+            document.getElementById("historia").innerHTML = avisoErro(erro.message);
+            ["missao", "visao", "valores"].forEach(id => document.getElementById(id).textContent = "—");
+        }
+    })();
+</script>
+</body>
+</html>

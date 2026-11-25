@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22%231e4d3b%22/%3E%3Ctext x=%2250%22 y=%2266%22 font-size=%2248%22 text-anchor=%22middle%22 fill=%22%23f1c453%22 font-family=%22Georgia%22%3EB%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="css/estilo.css">
+    <title>Portfólio · Brassaria Internacional</title>
+</head>
+<body>
+
+<section class="pagina-topo">
+    <div class="container">
+        <div class="sobretitulo">Portfólio de bebidas</div>
+        <h1>Para cada momento, uma escolha</h1>
+        <p>Lagers, especiais, fermentados naturais e uma linha completa sem álcool — todas com teor alcoólico e calorias informados.</p>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="container">
+        <div class="filtros">
+            <div class="chips" id="chips-categorias" aria-label="Filtrar por categoria"></div>
+            <div class="busca">
+                <select id="filtro-alcool" aria-label="Filtrar por teor alcoólico">
+                    <option value="">Com e sem álcool</option>
+                    <option value="true">Somente alcoólicas</option>
+                    <option value="false">Somente sem álcool</option>
+                </select>
+                <input type="search" id="filtro-nome" placeholder="Buscar pelo nome…" aria-label="Buscar bebida pelo nome">
+            </div>
+        </div>
+        <div class="grade grade-4" id="lista-bebidas">
+            <p class="carregando">Carregando portfólio…</p>
+        </div>
+    </div>
+</section>
+
+<script src="js/api.js"></script>
+<script src="js/componentes.js"></script>
+<script>
+    const filtros = { categoriaId: "", alcoolica: "", nome: "" };
+    const chips = document.getElementById("chips-categorias");
+    const lista = document.getElementById("lista-bebidas");
+
+    async function carregarCategorias() {
+        try {
+            const categorias = await Api.categorias();
+            chips.innerHTML = '<button class="chip ativo" data-id="">Todas</button>' +
+                categorias.map(c => `<button class="chip" data-id="${c.id}" title="${escapar(c.descricao || "")}">${escapar(c.nome)} (${c.totalBebidas})</button>`).join("");
+        } catch (erro) {
+            chips.innerHTML = avisoErro(erro.message);
+        }
+    }
+
+    async function carregarBebidas() {
+        lista.innerHTML = '<p class="carregando">Carregando portfólio…</p>';
+        try {
+            const bebidas = await Api.bebidas(filtros);  // GET /api/bebidas?categoriaId=&alcoolica=&nome=
+            lista.innerHTML = bebidas.length
+                ? bebidas.map(cardBebida).join("")
+                : '<p class="vazio">Nenhuma bebida encontrada com esses filtros.</p>';
+        } catch (erro) {
+            lista.innerHTML = avisoErro(erro.message);
+        }
+    }
+
+    chips.addEventListener("click", ev => {
+        const chip = ev.target.closest(".chip");
+        if (!chip) return;
+        chips.querySelectorAll(".chip").forEach(c => c.classList.toggle("ativo", c === chip));
+        filtros.categoriaId = chip.dataset.id;
+        carregarBebidas();
+    });
+
+    document.getElementById("filtro-alcool").addEventListener("change", ev => {
+        filtros.alcoolica = ev.target.value;
+        carregarBebidas();
+    });
+
+    let espera;
+    document.getElementById("filtro-nome").addEventListener("input", ev => {
+        clearTimeout(espera);
+        espera = setTimeout(() => { filtros.nome = ev.target.value.trim(); carregarBebidas(); }, 300);
+    });
+
+    carregarCategorias();
+    carregarBebidas();
+</script>
+</body>
+</html>
