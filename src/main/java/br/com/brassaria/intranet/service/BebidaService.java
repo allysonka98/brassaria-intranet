@@ -7,7 +7,10 @@ import br.com.brassaria.intranet.exception.RegraNegocioException;
 import br.com.brassaria.intranet.model.Bebida;
 import br.com.brassaria.intranet.model.Evento;
 import br.com.brassaria.intranet.repository.BebidaRepository;
+import br.com.brassaria.intranet.repository.BebidaSpecs;
 import br.com.brassaria.intranet.repository.EventoRepository;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +38,12 @@ public class BebidaService {
 
     @Transactional(readOnly = true)
     public List<BebidaResponse> listar(Long categoriaId, Boolean alcoolica, String nome) {
-        String termo = (nome == null || nome.isBlank()) ? null : nome.trim();
-        return bebidaRepository.buscar(categoriaId, alcoolica, termo).stream()
+        Specification<Bebida> filtros = Specification.where(BebidaSpecs.carregarCategoria())
+                .and(BebidaSpecs.daCategoria(categoriaId))
+                .and(BebidaSpecs.alcoolica(alcoolica))
+                .and(BebidaSpecs.nomeContem(nome));
+        Sort ordem = Sort.by("categoria.nome").ascending().and(Sort.by("nome").ascending());
+        return bebidaRepository.findAll(filtros, ordem).stream()
                 .map(BebidaResponse::de)
                 .toList();
     }
